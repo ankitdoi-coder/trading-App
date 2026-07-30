@@ -34,7 +34,9 @@ public class ExchangeWebSocketService {
     // 1. BINANCE
     private void connectBinance() {
         try {
-            URI uri = new URI("wss://stream.binance.com:9443/ws/btcusdt@ticker");
+            // Use standard HTTPS/WSS port 443 stream
+            URI uri = new URI("wss://stream.binance.com:443/ws/btcusdt@ticker");
+
             WebSocketClient client = new WebSocketClient(uri) {
                 @Override
                 public void onOpen(ServerHandshake handshake) {
@@ -48,10 +50,12 @@ public class ExchangeWebSocketService {
 
                 @Override
                 public void onClose(int code, String reason, boolean remote) {
+                    System.out.println("Binance WS Closed: " + reason);
                 }
 
                 @Override
                 public void onError(Exception ex) {
+                    System.err.println("Binance Error: " + ex.getMessage());
                 }
             };
             client.connect();
