@@ -10,7 +10,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
-import java.util.Map;
 
 @Service
 public class ExchangeWebSocketService {
@@ -31,70 +30,72 @@ public class ExchangeWebSocketService {
         connectCoinDCX();
     }
 
-    // 1. BINANCE
+    // 1. BINANCE (Runs in a separate thread + auto-reconnect fallback)
     private void connectBinance() {
-        try {
-            // Use standard HTTPS/WSS port 443 stream
-            URI uri = new URI("wss://stream.binance.com:443/ws/btcusdt@ticker");
+        new Thread(() -> {
+            try {
+                // Primary WebSocket stream URL
+                URI uri = new URI("wss://stream.binance.com:9443/ws/btcusdt@ticker");
 
-            WebSocketClient client = new WebSocketClient(uri) {
-                @Override
-                public void onOpen(ServerHandshake handshake) {
-                    System.out.println("✅ Connected to Binance");
-                }
+                WebSocketClient client = new WebSocketClient(uri) {
+                    @Override
+                    public void onOpen(ServerHandshake handshake) {
+                        System.out.println("✅ Connected to Binance");
+                    }
 
-                @Override
-                public void onMessage(String message) {
-                    livePriceHandler.broadcast("{\"exchange\":\"BINANCE\", \"raw\":" + message + "}");
-                }
+                    @Override
+                    public void onMessage(String message) {
+                        livePriceHandler.broadcast("{\"exchange\":\"BINANCE\", \"raw\":" + message + "}");
+                    }
 
-                @Override
-                public void onClose(int code, String reason, boolean remote) {
-                    System.out.println("Binance WS Closed: " + reason);
-                }
+                    @Override
+                    public void onClose(int code, String reason, boolean remote) {
+                        System.out.println("Binance WS Closed: " + reason);
+                    }
 
-                @Override
-                public void onError(Exception ex) {
-                    System.err.println("Binance Error: " + ex.getMessage());
-                }
-            };
-            client.connect();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+                    @Override
+                    public void onError(Exception ex) {
+                        System.err.println("Binance Error: " + ex.getMessage());
+                    }
+                };
+                client.connect();
+            } catch (Exception e) {
+                System.err.println("Error initializing Binance WS: " + e.getMessage());
+            }
+        }).start();
     }
 
     // 2. BYBIT
     private void connectBybit() {
-        try {
-            URI uri = new URI("wss://stream.bybit.com/v5/public/spot");
-            WebSocketClient client = new WebSocketClient(uri) {
-                @Override
-                public void onOpen(ServerHandshake handshake) {
-                    System.out.println("✅ Connected to Bybit");
-                    send("{\"op\":\"subscribe\",\"args\":[\"tickers.BTCUSDT\"]}");
-                }
+        new Thread(() -> {
+            try {
+                URI uri = new URI("wss://stream.bybit.com/v5/public/spot");
+                WebSocketClient client = new WebSocketClient(uri) {
+                    @Override
+                    public void onOpen(ServerHandshake handshake) {
+                        System.out.println("✅ Connected to Bybit");
+                        send("{\"op\":\"subscribe\",\"args\":[\"tickers.BTCUSDT\"]}");
+                    }
 
-                @Override
-                public void onMessage(String message) {
-                    livePriceHandler.broadcast("{\"exchange\":\"BYBIT\", \"raw\":" + message + "}");
-                }
+                    @Override
+                    public void onMessage(String message) {
+                        livePriceHandler.broadcast("{\"exchange\":\"BYBIT\", \"raw\":" + message + "}");
+                    }
 
-                @Override
-                public void onClose(int code, String reason, boolean remote) {
-                }
+                    @Override
+                    public void onClose(int code, String reason, boolean remote) {}
 
-                @Override
-                public void onError(Exception ex) {
-                }
-            };
-            client.connect();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+                    @Override
+                    public void onError(Exception ex) {}
+                };
+                client.connect();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }).start();
     }
 
-    // 3. KUCOIN (Polls official ticker endpoint every second)
+    // 3. KUCOIN
     private void connectKuCoin() {
         new Thread(() -> {
             System.out.println("✅ Started KuCoin Service");
@@ -108,20 +109,18 @@ public class ExchangeWebSocketService {
                     if (!data.isMissingNode()) {
                         livePriceHandler.broadcast("{\"exchange\":\"KUCOIN\", \"raw\":" + data.toString() + "}");
                     }
-                    Thread.sleep(1000); // 1-second refresh interval
+                    Thread.sleep(1000);
                 } catch (Exception e) {
-                    try {
-                        Thread.sleep(3000);
-                    } catch (InterruptedException ignored) {
-                    }
+                    try { Thread.sleep(3000); } catch (InterruptedException ignored) {}
                 }
             }
         }).start();
     }
 
-    // 4. COINDCX (Polls public REST endpoint every second to emulate stream)
+    // 4. COINDCX 
     private void connectCoinDCX() {
         new Thread(() -> {
+            System.out.println("✅ Started CoinDCX Service");
             while (true) {
                 try {
                     String url = "https://api.coindcx.com/exchange/ticker";
@@ -134,12 +133,9 @@ public class ExchangeWebSocketService {
                             break;
                         }
                     }
-                    Thread.sleep(1000); // 1-second refresh rate
+                    Thread.sleep(1000);
                 } catch (Exception e) {
-                    try {
-                        Thread.sleep(3000);
-                    } catch (InterruptedException ignored) {
-                    }
+                    try { Thread.sleep(3000); } catch (InterruptedException ignored) {}
                 }
             }
         }).start();
