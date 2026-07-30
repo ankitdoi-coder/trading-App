@@ -30,41 +30,33 @@ public class ExchangeWebSocketService {
         connectCoinDCX();
     }
 
-    // 1. BINANCE (Runs in a separate thread + auto-reconnect fallback)
-    private void connectBinance() {
-        new Thread(() -> {
+   private void connectBinance() {
+    new Thread(() -> {
+        System.out.println("✅ Started Binance REST Polling Service");
+        while (true) {
             try {
-                // Primary WebSocket stream URL
-                URI uri = new URI("wss://stream.binance.com:9443/ws/btcusdt@ticker");
+                String url = "https://data-api.binance.vision/api/v3/ticker/24hr?symbol=BTCUSDT";
+                String response = restTemplate.getForObject(url, String.class);
+                JsonNode data = mapper.readTree(response);
 
-                WebSocketClient client = new WebSocketClient(uri) {
-                    @Override
-                    public void onOpen(ServerHandshake handshake) {
-                        System.out.println("✅ Connected to Binance");
-                    }
-
-                    @Override
-                    public void onMessage(String message) {
-                        livePriceHandler.broadcast("{\"exchange\":\"BINANCE\", \"raw\":" + message + "}");
-                    }
-
-                    @Override
-                    public void onClose(int code, String reason, boolean remote) {
-                        System.out.println("Binance WS Closed: " + reason);
-                    }
-
-                    @Override
-                    public void onError(Exception ex) {
-                        System.err.println("Binance Error: " + ex.getMessage());
-                    }
-                };
-                client.connect();
+                if (!data.isMissingNode()) {
+                    String jsonPayload = String.format(
+                        "{\"s\":\"%s\",\"c\":\"%s\",\"P\":\"%s\",\"h\":\"%s\",\"l\":\"%s\"}",
+                        data.path("symbol").asText(),
+                        data.path("lastPrice").asText(),
+                        data.path("priceChangePercent").asText(),
+                        data.path("highPrice").asText(),
+                        data.path("lowPrice").asText()
+                    );
+                    livePriceHandler.broadcast("{\"exchange\":\"BINANCE\", \"raw\":" + jsonPayload + "}");
+                }
+                Thread.sleep(1000);
             } catch (Exception e) {
-                System.err.println("Error initializing Binance WS: " + e.getMessage());
+                try { Thread.sleep(3000); } catch (InterruptedException ignored) {}
             }
-        }).start();
-    }
-
+        }
+    }).start();
+}
     // 2. BYBIT
     private void connectBybit() {
         new Thread(() -> {
