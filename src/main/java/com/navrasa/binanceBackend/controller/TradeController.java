@@ -1,6 +1,9 @@
 package com.navrasa.binanceBackend.controller;
 
 import com.navrasa.binanceBackend.services.BinanceTradingService;
+import com.navrasa.binanceBackend.services.BybitTradingService;
+
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -8,27 +11,35 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/trade")
-@CrossOrigin(origins = "*") // Allows Angular client requests from local and hosted URLs
+@CrossOrigin(origins = "*")
 public class TradeController {
 
-    private final BinanceTradingService tradingService;
+    private final BybitTradingService bybitService;
+    private final BinanceTradingService binanceService;
 
-    public TradeController(BinanceTradingService tradingService) {
-        this.tradingService = tradingService;
+    public TradeController(BybitTradingService bybitService, BinanceTradingService binanceService) {
+        this.bybitService = bybitService;
+        this.binanceService = binanceService;
     }
 
-    @PostMapping("/execute")
+    @PostMapping(value = "/execute", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> executeTrade(@RequestBody Map<String, Object> request) {
         try {
             String symbol = (String) request.getOrDefault("symbol", "BTCUSDT");
             String side = (String) request.getOrDefault("side", "BUY");
-            double quantity = Double.parseDouble(request.get("quantity").toString());
+            
+            // Note: Passed as string to prevent double decimal rounding issues
+            String quantity = request.get("quantity").toString(); 
 
-            String binanceResponse = tradingService.executeOrder(symbol, side, quantity);
-            return ResponseEntity.ok(binanceResponse);
+            // Execute on 
+            String response = binanceService.executeOrder(symbol, side, quantity);
+            
+            return ResponseEntity.ok(response);
+            
         } catch (Exception e) {
-            return ResponseEntity.badRequest()
-                    .body("{\"error\":\"Trade failed: " + e.getMessage() + "\"}");
+            return ResponseEntity.badRequest().body(
+                Map.of("error", "Trade Rejected: " + e.getMessage())
+            );
         }
     }
 }

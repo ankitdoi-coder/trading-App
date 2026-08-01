@@ -30,33 +30,66 @@ public class ExchangeWebSocketService {
         connectCoinDCX();
     }
 
-   private void connectBinance() {
-    new Thread(() -> {
-        System.out.println("✅ Started Binance REST Polling Service");
-        while (true) {
-            try {
-                String url = "https://data-api.binance.vision/api/v3/ticker/24hr?symbol=BTCUSDT";
-                String response = restTemplate.getForObject(url, String.class);
-                JsonNode data = mapper.readTree(response);
+    // private void connectBinance() {
+    //     new Thread(() -> {
+    //         System.out.println("✅ Started Binance REST Polling Service");
+    //         while (true) {
+    //             try {
+    //                 String url = "https://data-api.binance.vision/api/v3/ticker/24hr?symbol=BTCUSDT";
+    //                 String response = restTemplate.getForObject(url, String.class);
+    //                 JsonNode data = mapper.readTree(response);
 
-                if (!data.isMissingNode()) {
-                    String jsonPayload = String.format(
-                        "{\"s\":\"%s\",\"c\":\"%s\",\"P\":\"%s\",\"h\":\"%s\",\"l\":\"%s\"}",
-                        data.path("symbol").asText(),
-                        data.path("lastPrice").asText(),
-                        data.path("priceChangePercent").asText(),
-                        data.path("highPrice").asText(),
-                        data.path("lowPrice").asText()
-                    );
-                    livePriceHandler.broadcast("{\"exchange\":\"BINANCE\", \"raw\":" + jsonPayload + "}");
-                }
-                Thread.sleep(1000);
+    //                 if (!data.isMissingNode()) {
+    //                     String jsonPayload = String.format(
+    //                             "{\"s\":\"%s\",\"c\":\"%s\",\"P\":\"%s\",\"h\":\"%s\",\"l\":\"%s\"}",
+    //                             data.path("symbol").asText(),
+    //                             data.path("lastPrice").asText(),
+    //                             data.path("priceChangePercent").asText(),
+    //                             data.path("highPrice").asText(),
+    //                             data.path("lowPrice").asText());
+    //                     livePriceHandler.broadcast("{\"exchange\":\"BINANCE\", \"raw\":" + jsonPayload + "}");
+    //                 }
+    //                 Thread.sleep(1000);
+    //             } catch (Exception e) {
+    //                 try {
+    //                     Thread.sleep(3000);
+    //                 } catch (InterruptedException ignored) {
+    //                 }
+    //             }
+    //         }
+    //     }).start();
+    // }
+
+    private void connectBinance() {
+        new Thread(() -> {
+            try {
+                // Connect directly to the Binance WebSocket Stream
+                URI uri = new URI("wss://stream.binance.com:9443/ws/btcusdt@ticker");
+                WebSocketClient client = new WebSocketClient(uri) {
+                    @Override
+                    public void onOpen(ServerHandshake handshake) {
+                        System.out.println(" ✅ Connected to Binance WebSocket");
+                    }
+
+                    @Override
+                    public void onMessage(String message) {
+                        // Instantly broadcast the raw JSON to Angular without parsing overhead
+                        livePriceHandler.broadcast("{\"exchange\":\"BINANCE\", \"raw\":" + message + "}");
+                    }
+
+                    @Override
+                    public void onClose(int code, String reason, boolean remote) {}
+
+                    @Override
+                    public void onError(Exception ex) {}
+                };
+                client.connect();
             } catch (Exception e) {
-                try { Thread.sleep(3000); } catch (InterruptedException ignored) {}
+                e.printStackTrace();
             }
-        }
-    }).start();
-}
+        }).start();
+    }
+
     // 2. BYBIT
     private void connectBybit() {
         new Thread(() -> {
@@ -65,7 +98,7 @@ public class ExchangeWebSocketService {
                 WebSocketClient client = new WebSocketClient(uri) {
                     @Override
                     public void onOpen(ServerHandshake handshake) {
-                        System.out.println("✅ Connected to Bybit");
+                        System.out.println(" ✅ Connected to Bybit websocket");
                         send("{\"op\":\"subscribe\",\"args\":[\"tickers.BTCUSDT\"]}");
                     }
 
@@ -75,10 +108,12 @@ public class ExchangeWebSocketService {
                     }
 
                     @Override
-                    public void onClose(int code, String reason, boolean remote) {}
+                    public void onClose(int code, String reason, boolean remote) {
+                    }
 
                     @Override
-                    public void onError(Exception ex) {}
+                    public void onError(Exception ex) {
+                    }
                 };
                 client.connect();
             } catch (Exception e) {
@@ -103,13 +138,16 @@ public class ExchangeWebSocketService {
                     }
                     Thread.sleep(1000);
                 } catch (Exception e) {
-                    try { Thread.sleep(3000); } catch (InterruptedException ignored) {}
+                    try {
+                        Thread.sleep(3000);
+                    } catch (InterruptedException ignored) {
+                    }
                 }
             }
         }).start();
     }
 
-    // 4. COINDCX 
+    // 4. COINDCX
     private void connectCoinDCX() {
         new Thread(() -> {
             System.out.println("✅ Started CoinDCX Service");
@@ -127,7 +165,10 @@ public class ExchangeWebSocketService {
                     }
                     Thread.sleep(1000);
                 } catch (Exception e) {
-                    try { Thread.sleep(3000); } catch (InterruptedException ignored) {}
+                    try {
+                        Thread.sleep(3000);
+                    } catch (InterruptedException ignored) {
+                    }
                 }
             }
         }).start();

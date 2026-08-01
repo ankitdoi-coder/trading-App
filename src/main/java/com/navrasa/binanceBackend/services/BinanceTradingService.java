@@ -14,20 +14,20 @@ public class BinanceTradingService {
     public BinanceTradingService(
             @Value("${binance.api.key}") String apiKey,
             @Value("${binance.api.secret}") String secretKey) {
-        this.client = new SpotClientImpl(apiKey, secretKey);
+        
+        // Use the Demo Trading URL to match the keys in your screenshot
+        this.client = new SpotClientImpl(apiKey, secretKey, "https://demo-api.binance.com");
     }
 
-    /**
-     * Executes a MARKET order (BUY or SELL) on Binance
-     */
-    public String executeOrder(String symbol, String side, double quantity) {
+    public String executeOrder(String symbol, String side, String quantity) {
         LinkedHashMap<String, Object> parameters = new LinkedHashMap<>();
-        parameters.put("symbol", symbol.toUpperCase()); // e.g., BTCUSDT
-        parameters.put("side", side.toUpperCase());     // "BUY" or "SELL"
+        parameters.put("symbol", symbol.toUpperCase());
+        parameters.put("side", side.toUpperCase());
         parameters.put("type", "MARKET");
         parameters.put("quantity", quantity);
+        // ADD THIS LINE: Increase the receive window to 60,000 milliseconds (60 seconds)
+        parameters.put("recvWindow", 60000L);
 
-        // Executes live trade on Binance and returns the raw response JSON
         return client.createTrade().newOrder(parameters);
     }
 }

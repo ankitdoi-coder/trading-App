@@ -15,7 +15,8 @@ public class BinanceService {
             @Value("${binance.api.key}") String apiKey,
             @Value("${binance.api.secret}") String secretKey) {
         
-        // Initializing  the client with your credentials
+        // This service uses the MAINNET to fetch real live prices. 
+        // It does not need the Testnet URL.
         this.client = new SpotClientImpl(apiKey, secretKey);
     }
 
