@@ -12,7 +12,11 @@ import java.util.concurrent.CopyOnWriteArrayList;
 @Component
 public class LivePriceHandler extends TextWebSocketHandler {
 
+    //TextWebSocketHandler = this tells spring that this class handles the websocket events
+
+        
     private final CopyOnWriteArrayList<WebSocketSession> sessions = new CopyOnWriteArrayList<>();
+
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) {
