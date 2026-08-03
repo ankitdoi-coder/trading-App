@@ -11,7 +11,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/trade")
-@CrossOrigin(origins = "http://localhost:4200") // Explicitly allow Angular origin
+@CrossOrigin(origins = {"http://localhost:4200", "https://tradingappfrontend-8vu1.onrender.com"})// Explicitly allow Angular origin
 public class TradeController {
 
     private final BybitTradingService bybitService;
