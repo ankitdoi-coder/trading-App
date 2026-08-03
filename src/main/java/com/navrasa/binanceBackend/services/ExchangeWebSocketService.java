@@ -36,12 +36,13 @@ public class ExchangeWebSocketService {
     private void connectBinance() {
         new Thread(() -> {
             try {
-                // Connect directly to the Binance WebSocket Stream
-                URI uri = new URI("wss://stream.binance.com:9443/ws/btcusdt@ticker");
+                // 🔥 THE FIX: Use Binance.US to bypass Render's US Datacenter Geo-block
+                URI uri = new URI("wss://stream.binance.us:9443/ws/btcusdt@ticker");
+
                 WebSocketClient client = new WebSocketClient(uri) {
                     @Override
                     public void onOpen(ServerHandshake handshake) {
-                        System.out.println(" ✅ Connected to Binance WebSocket");
+                        System.out.println("   Connected to Binance WebSocket");
                     }
 
                     @Override
@@ -54,7 +55,6 @@ public class ExchangeWebSocketService {
                             JsonNode data = mapper.readTree(message);
                             double currentPrice = data.path("c").asDouble();
                             activeTradeService.checkPriceAgainstLimits("BTCUSDT", currentPrice);
-
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
@@ -62,12 +62,14 @@ public class ExchangeWebSocketService {
 
                     @Override
                     public void onClose(int code, String reason, boolean remote) {
+                        System.out.println("Binance WS Closed: " + reason);
                     }
 
                     @Override
                     public void onError(Exception ex) {
+                        // 🔥 Added error logging so it doesn't fail silently anymore!
+                        System.err.println("Binance WS Error: " + ex.getMessage());
                     }
-
                 };
                 client.connect();
             } catch (Exception e) {
