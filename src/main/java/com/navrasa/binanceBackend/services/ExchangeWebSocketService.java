@@ -1,5 +1,6 @@
 package com.navrasa.binanceBackend.services;
 
+import com.navrasa.binanceBackend.services.ActiveTradeService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.navrasa.binanceBackend.config.LivePriceHandler;
@@ -15,11 +16,13 @@ import java.net.URI;
 public class ExchangeWebSocketService {
 
     private final LivePriceHandler livePriceHandler;
+    private final ActiveTradeService activeTradeService;
     private final ObjectMapper mapper = new ObjectMapper();
     private final RestTemplate restTemplate = new RestTemplate();
 
-    public ExchangeWebSocketService(LivePriceHandler livePriceHandler) {
+    public ExchangeWebSocketService(LivePriceHandler livePriceHandler, ActiveTradeService activeTradeService) {
         this.livePriceHandler = livePriceHandler;
+        this.activeTradeService = activeTradeService;
     }
 
     @PostConstruct
@@ -29,36 +32,6 @@ public class ExchangeWebSocketService {
         connectKuCoin();
         connectCoinDCX();
     }
-
-    // private void connectBinance() {
-    //     new Thread(() -> {
-    //         System.out.println("✅ Started Binance REST Polling Service");
-    //         while (true) {
-    //             try {
-    //                 String url = "https://data-api.binance.vision/api/v3/ticker/24hr?symbol=BTCUSDT";
-    //                 String response = restTemplate.getForObject(url, String.class);
-    //                 JsonNode data = mapper.readTree(response);
-
-    //                 if (!data.isMissingNode()) {
-    //                     String jsonPayload = String.format(
-    //                             "{\"s\":\"%s\",\"c\":\"%s\",\"P\":\"%s\",\"h\":\"%s\",\"l\":\"%s\"}",
-    //                             data.path("symbol").asText(),
-    //                             data.path("lastPrice").asText(),
-    //                             data.path("priceChangePercent").asText(),
-    //                             data.path("highPrice").asText(),
-    //                             data.path("lowPrice").asText());
-    //                     livePriceHandler.broadcast("{\"exchange\":\"BINANCE\", \"raw\":" + jsonPayload + "}");
-    //                 }
-    //                 Thread.sleep(1000);
-    //             } catch (Exception e) {
-    //                 try {
-    //                     Thread.sleep(3000);
-    //                 } catch (InterruptedException ignored) {
-    //                 }
-    //             }
-    //         }
-    //     }).start();
-    // }
 
     private void connectBinance() {
         new Thread(() -> {
@@ -73,15 +46,28 @@ public class ExchangeWebSocketService {
 
                     @Override
                     public void onMessage(String message) {
-                        // Instantly broadcast the raw JSON to Angular without parsing overhead
-                        livePriceHandler.broadcast("{\"exchange\":\"BINANCE\", \"raw\":" + message + "}");
+                        try {
+                            // 1. Broadcast to Angular
+                            livePriceHandler.broadcast("{\"exchange\":\"BINANCE\", \"raw\":" + message + "}");
+
+                            // 2. Feed price to Auto-Seller Engine
+                            JsonNode data = mapper.readTree(message);
+                            double currentPrice = data.path("c").asDouble();
+                            activeTradeService.checkPriceAgainstLimits("BTCUSDT", currentPrice);
+
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
                     }
 
                     @Override
-                    public void onClose(int code, String reason, boolean remote) {}
+                    public void onClose(int code, String reason, boolean remote) {
+                    }
 
                     @Override
-                    public void onError(Exception ex) {}
+                    public void onError(Exception ex) {
+                    }
+
                 };
                 client.connect();
             } catch (Exception e) {

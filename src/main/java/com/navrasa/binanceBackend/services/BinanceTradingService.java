@@ -25,7 +25,8 @@ public class BinanceTradingService {
         parameters.put("side", side.toUpperCase());
         parameters.put("type", "MARKET");
         parameters.put("quantity", quantity);
-        // ADD THIS LINE: Increase the receive window to 60,000 milliseconds (60 seconds)
+        parameters.put("timestamp", System.currentTimeMillis() - 2000L);
+        // Increase the receive window to 60,000 milliseconds (60 seconds)
         parameters.put("recvWindow", 60000L);
 
         return client.createTrade().newOrder(parameters);
