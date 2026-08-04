@@ -1,0 +1,15 @@
+2026-08-04 16:13:03.320[1785840183320] | INFO  | main       | o.s.t.c.s.AnnotationConfigContextLoaderUtils - Could not detect default configuration classes for test class [com.navrasa.binanceBackend.BinanceBackendApplicationTests]: BinanceBackendApplicationTests does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-08-04 16:13:03.845[1785840183845] | INFO  | main       | o.s.b.t.c.SpringBootTestContextBootstrapper - Found @SpringBootConfiguration com.navrasa.binanceBackend.BinanceBackendApplication for test class com.navrasa.binanceBackend.BinanceBackendApplicationTests
+2026-08-04 16:13:04.461[1785840184461] | INFO  | main       | o.s.b.d.r.RestartApplicationListener - Restart disabled due to context in which it is running
+2026-08-04 16:13:05.228[1785840185228] | WARN  | main       | o.s.b.t.j.DuplicateJsonObjectContextCustomizerFactory$DuplicateJsonObjectContextCustomizer - 
+
+Found multiple occurrences of org.json.JSONObject on the class path:
+
+	jar:file:/C:/Users/hp/.m2/repository/com/vaadin/external/google/android-json/0.0.20131108.vaadin1/android-json-0.0.20131108.vaadin1.jar!/org/json/JSONObject.class
+	jar:file:/C:/Users/hp/.m2/repository/org/json/json/20231013/json-20231013.jar!/org/json/JSONObject.class
+
+You may wish to exclude one of them to ensure predictable runtime behavior
+
+2026-08-04 16:13:05.370[1785840185370] | INFO  | main       | c.n.b.BinanceBackendApplicationTests - Starting BinanceBackendApplicationTests using Java 21.0.12 with PID 4744 (started by ANKIT DOI in D:\SDE-Projects\Navrasa\binanceBackend)
+2026-08-04 16:13:05.372[1785840185372] | INFO  | main       | c.n.b.BinanceBackendApplicationTests - No active profile set, falling back to 1 default profile: "default"
+2026-08-04 16:13:16.546[1785840196546] | INFO  | main       | c.n.b.BinanceBackendApplicationTests - Started BinanceBackendApplicationTests in 12.117 seconds (process running for 44.412)
