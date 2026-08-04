@@ -42,7 +42,7 @@ public class ExchangeWebSocketService {
                 WebSocketClient client = new WebSocketClient(uri) {
                     @Override
                     public void onOpen(ServerHandshake handshake) {
-                        System.out.println("   Connected to Binance WebSocket");
+                        System.out.println("✅Connected to Binance WebSocket");
                     }
 
                     @Override
