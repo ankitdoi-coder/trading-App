@@ -67,12 +67,10 @@
 //     }
 // }
 
-
-
 package com.navrasa.binanceBackend.controller;
 
 import com.navrasa.binanceBackend.services.ActiveTradeService;
-import com.navrasa.binanceBackend.services.BinanceFuturesTradingService; // 🔥 Injected Futures Service
+import com.navrasa.binanceBackend.services.BinanceFuturesTradingService;
 import com.navrasa.binanceBackend.services.BybitTradingService;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -86,12 +84,12 @@ import java.util.Map;
 public class TradeController {
 
     private final BybitTradingService bybitService;
-    private final BinanceFuturesTradingService binanceFuturesService; // 🔥 Futures Service
+    private final BinanceFuturesTradingService binanceFuturesService;
     private final ActiveTradeService activeTradeService;
 
-    public TradeController(BybitTradingService bybitService, 
-                           BinanceFuturesTradingService binanceFuturesService,
-                           ActiveTradeService activeTradeService) {
+    public TradeController(BybitTradingService bybitService,
+            BinanceFuturesTradingService binanceFuturesService,
+            ActiveTradeService activeTradeService) {
         this.bybitService = bybitService;
         this.binanceFuturesService = binanceFuturesService;
         this.activeTradeService = activeTradeService;
@@ -101,15 +99,19 @@ public class TradeController {
     public ResponseEntity<?> executeTrade(@RequestBody Map<String, Object> request) {
         try {
             String symbol = (String) request.getOrDefault("symbol", "BTCUSDT");
-            String direction = (String) request.getOrDefault("direction", "LONG");
+            String direction = (String) request.getOrDefault("direction", "LONG"); // This is positionSide
             int leverage = Integer.parseInt(request.getOrDefault("leverage", 10).toString());
             String quantity = request.get("quantity").toString();
 
-            // 🎯 1. Execute Order on BINANCE FUTURES TESTNET
-            String response = binanceFuturesService.executeFuturesOrder(symbol, direction, leverage, quantity);
+            // Determine the 'side' for Opening a position in Hedge Mode
+            String side = direction.equalsIgnoreCase("LONG") ? "BUY" : "SELL";
 
-            // 🎯 2. Track Active Futures Position for SL/TP Auto-Closing
-            if (request.containsKey("stopLoss") && request.containsKey("takeProfit") && request.containsKey("entryPrice")) {
+            // Call service with the NEW signature
+            String response = binanceFuturesService.executeFuturesOrder(symbol, direction, side, leverage, quantity);
+
+            // Track Active Futures Position for SL/TP Auto-Closing
+            if (request.containsKey("stopLoss") && request.containsKey("takeProfit")
+                    && request.containsKey("entryPrice")) {
                 double stopLoss = Double.parseDouble(request.get("stopLoss").toString());
                 double takeProfit = Double.parseDouble(request.get("takeProfit").toString());
                 double entryPrice = Double.parseDouble(request.get("entryPrice").toString());
@@ -127,7 +129,7 @@ public class TradeController {
     @PostMapping(value = "/close/{symbol}", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> closeTrade(@PathVariable String symbol) {
         try {
-            // 🎯 3. Close Futures Position
+            // Close Futures Position
             String response = activeTradeService.manualFuturesClose(symbol.toUpperCase());
             return ResponseEntity.ok(response);
         } catch (Exception e) {
