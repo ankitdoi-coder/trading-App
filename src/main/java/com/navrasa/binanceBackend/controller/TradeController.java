@@ -127,10 +127,18 @@ public class TradeController {
 
     @CrossOrigin(origins = "http://localhost:4200")
     @PostMapping(value = "/close/{symbol}", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> closeTrade(@PathVariable String symbol) {
+    public ResponseEntity<?> closeTrade(
+            @PathVariable String symbol,
+            @RequestParam(required = false) String direction) {
         try {
-            // Close Futures Position
-            String response = activeTradeService.manualFuturesClose(symbol.toUpperCase());
+            String response;
+            if (direction != null && !direction.isEmpty()) {
+                // Close specific direction (LONG or SHORT)
+                response = activeTradeService.manualFuturesClose(symbol.toUpperCase(), direction.toUpperCase());
+            } else {
+                // Fallback close all active positions for symbol
+                response = activeTradeService.manualFuturesClose(symbol.toUpperCase());
+            }
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));

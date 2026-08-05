@@ -116,7 +116,7 @@ public class ActiveTradeService {
 
     // ==================== FUTURES TRADING LOGIC (HEDGE MODE & CROSSED MARGIN)
     // ====================
-    
+
     /**
      * Tracks an active Futures position in Hedge Mode.
      * Uses composite key "SYMBOL_DIRECTION" so both LONG and SHORT can exist
@@ -199,31 +199,32 @@ public class ActiveTradeService {
     }
 
     /**
-     * Fallback manual close when direction is not specified (Closes any active
-     * position for that symbol)
+     * Fallback manual close when direction is not specified.
+     * Formats output as valid JSON to prevent Angular parsing errors.
      */
     public String manualFuturesClose(String symbol) {
         String longKey = buildFuturesKey(symbol, "LONG");
         String shortKey = buildFuturesKey(symbol, "SHORT");
 
-        StringBuilder response = new StringBuilder();
         boolean found = false;
+        StringBuilder jsonBuilder = new StringBuilder("{");
 
         if (activeFuturesTrades.containsKey(longKey)) {
-            response.append("LONG Close: ").append(manualFuturesClose(symbol, "LONG"));
+            jsonBuilder.append("\"longClose\":").append(manualFuturesClose(symbol, "LONG"));
             found = true;
         }
         if (activeFuturesTrades.containsKey(shortKey)) {
             if (found)
-                response.append(" | ");
-            response.append("SHORT Close: ").append(manualFuturesClose(symbol, "SHORT"));
+                jsonBuilder.append(",");
+            jsonBuilder.append("\"shortClose\":").append(manualFuturesClose(symbol, "SHORT"));
             found = true;
         }
 
         if (!found) {
             return "{\"error\":\"No active futures positions found for symbol " + symbol + "\"}";
         }
-        return response.toString();
+        jsonBuilder.append("}");
+        return jsonBuilder.toString();
     }
 
     private String buildFuturesKey(String symbol, String direction) {
