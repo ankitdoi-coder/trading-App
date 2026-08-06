@@ -125,3 +125,66 @@ You may wish to exclude one of them to ensure predictable runtime behavior
 2026-08-06 15:37:29.445[1786010849445] | INFO  | main       | c.n.b.BinanceBackendApplicationTests - Starting BinanceBackendApplicationTests using Java 21.0.12 with PID 14780 (started by ANKIT DOI in D:\SDE-Projects\Navrasa\binanceBackend)
 2026-08-06 15:37:29.445[1786010849445] | INFO  | main       | c.n.b.BinanceBackendApplicationTests - No active profile set, falling back to 1 default profile: "default"
 2026-08-06 15:37:34.344[1786010854344] | INFO  | main       | c.n.b.BinanceBackendApplicationTests - Started BinanceBackendApplicationTests in 5.565 seconds (process running for 9.701)
+2026-08-06 16:31:00.301[1786014060301] | INFO  | restartedMain | c.n.b.BinanceBackendApplication      - Starting BinanceBackendApplication using Java 21.0.12 with PID 17892 (D:\SDE-Projects\Navrasa\binanceBackend\target\classes started by ANKIT DOI in D:\SDE-Projects\Navrasa\binanceBackend)
+2026-08-06 16:31:00.304[1786014060304] | INFO  | restartedMain | c.n.b.BinanceBackendApplication      - No active profile set, falling back to 1 default profile: "default"
+2026-08-06 16:31:00.401[1786014060401] | INFO  | restartedMain | o.s.b.d.e.DevToolsPropertyDefaultsPostProcessor - Devtools property defaults active! Set 'spring.devtools.add-properties' to 'false' to disable
+2026-08-06 16:31:00.401[1786014060401] | INFO  | restartedMain | o.s.b.d.e.DevToolsPropertyDefaultsPostProcessor - For additional web related logging consider setting the 'logging.level.web' property to 'DEBUG'
+2026-08-06 16:31:06.096[1786014066096] | INFO  | restartedMain | o.s.b.w.e.tomcat.TomcatWebServer     - Tomcat initialized with port 8080 (http)
+2026-08-06 16:31:06.120[1786014066120] | INFO  | restartedMain | o.a.coyote.http11.Http11NioProtocol  - Initializing ProtocolHandler ["http-nio-8080"]
+2026-08-06 16:31:06.126[1786014066126] | INFO  | restartedMain | o.a.catalina.core.StandardService    - Starting service [Tomcat]
+2026-08-06 16:31:06.128[1786014066128] | INFO  | restartedMain | o.a.catalina.core.StandardEngine     - Starting Servlet engine: [Apache Tomcat/10.1.24]
+2026-08-06 16:31:06.388[1786014066388] | INFO  | restartedMain | o.a.c.c.C.[Tomcat].[localhost].[/]   - Initializing Spring embedded WebApplicationContext
+2026-08-06 16:31:06.390[1786014066390] | INFO  | restartedMain | o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 5987 ms
+2026-08-06 16:31:07.503[1786014067503] | INFO  | restartedMain | o.s.b.d.a.OptionalLiveReloadServer   - LiveReload server is running on port 35729
+2026-08-06 16:31:07.550[1786014067550] | INFO  | restartedMain | o.a.coyote.http11.Http11NioProtocol  - Starting ProtocolHandler ["http-nio-8080"]
+2026-08-06 16:31:07.946[1786014067946] | INFO  | restartedMain | o.s.b.w.e.tomcat.TomcatWebServer     - Tomcat started on port 8080 (http) with context path '/'
+2026-08-06 16:31:07.971[1786014067971] | INFO  | restartedMain | c.n.b.BinanceBackendApplication      - Started BinanceBackendApplication in 8.567 seconds (process running for 16.053)
+2026-08-06 16:32:36.730[1786014156730] | INFO  | http-nio-8080-exec-1 | o.a.c.c.C.[Tomcat].[localhost].[/]   - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-08-06 16:32:36.734[1786014156734] | INFO  | http-nio-8080-exec-1 | o.s.web.servlet.DispatcherServlet    - Initializing Servlet 'dispatcherServlet'
+2026-08-06 16:32:36.737[1786014156737] | INFO  | http-nio-8080-exec-1 | o.s.web.servlet.DispatcherServlet    - Completed initialization in 2 ms
+2026-08-06 16:38:19.249[1786014499249] | INFO  | main       | o.s.t.c.s.AnnotationConfigContextLoaderUtils - Could not detect default configuration classes for test class [com.navrasa.binanceBackend.BinanceBackendApplicationTests]: BinanceBackendApplicationTests does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-08-06 16:38:19.574[1786014499574] | INFO  | main       | o.s.b.t.c.SpringBootTestContextBootstrapper - Found @SpringBootConfiguration com.navrasa.binanceBackend.BinanceBackendApplication for test class com.navrasa.binanceBackend.BinanceBackendApplicationTests
+2026-08-06 16:38:19.963[1786014499963] | INFO  | main       | o.s.b.d.r.RestartApplicationListener - Restart disabled due to context in which it is running
+2026-08-06 16:38:21.254[1786014501254] | WARN  | main       | o.s.b.t.j.DuplicateJsonObjectContextCustomizerFactory$DuplicateJsonObjectContextCustomizer - 
+
+Found multiple occurrences of org.json.JSONObject on the class path:
+
+	jar:file:/C:/Users/hp/.m2/repository/com/vaadin/external/google/android-json/0.0.20131108.vaadin1/android-json-0.0.20131108.vaadin1.jar!/org/json/JSONObject.class
+	jar:file:/C:/Users/hp/.m2/repository/org/json/json/20231013/json-20231013.jar!/org/json/JSONObject.class
+
+You may wish to exclude one of them to ensure predictable runtime behavior
+
+2026-08-06 16:38:21.310[1786014501310] | INFO  | main       | c.n.b.BinanceBackendApplicationTests - Starting BinanceBackendApplicationTests using Java 21.0.12 with PID 13884 (started by ANKIT DOI in D:\SDE-Projects\Navrasa\binanceBackend)
+2026-08-06 16:38:21.316[1786014501316] | INFO  | main       | c.n.b.BinanceBackendApplicationTests - No active profile set, falling back to 1 default profile: "default"
+2026-08-06 16:38:33.271[1786014513271] | INFO  | main       | c.n.b.BinanceBackendApplicationTests - Started BinanceBackendApplicationTests in 13.358 seconds (process running for 17.941)
+2026-08-06 16:40:28.711[1786014628711] | INFO  | restartedMain | c.n.b.BinanceBackendApplication      - Starting BinanceBackendApplication using Java 21.0.12 with PID 13428 (D:\SDE-Projects\Navrasa\binanceBackend\target\classes started by ANKIT DOI in D:\SDE-Projects\Navrasa\binanceBackend)
+2026-08-06 16:40:28.716[1786014628716] | INFO  | restartedMain | c.n.b.BinanceBackendApplication      - No active profile set, falling back to 1 default profile: "default"
+2026-08-06 16:40:28.819[1786014628819] | INFO  | restartedMain | o.s.b.d.e.DevToolsPropertyDefaultsPostProcessor - Devtools property defaults active! Set 'spring.devtools.add-properties' to 'false' to disable
+2026-08-06 16:40:28.820[1786014628820] | INFO  | restartedMain | o.s.b.d.e.DevToolsPropertyDefaultsPostProcessor - For additional web related logging consider setting the 'logging.level.web' property to 'DEBUG'
+2026-08-06 16:40:31.151[1786014631151] | INFO  | restartedMain | o.s.b.w.e.tomcat.TomcatWebServer     - Tomcat initialized with port 8080 (http)
+2026-08-06 16:40:31.176[1786014631176] | INFO  | restartedMain | o.a.coyote.http11.Http11NioProtocol  - Initializing ProtocolHandler ["http-nio-8080"]
+2026-08-06 16:40:31.185[1786014631185] | INFO  | restartedMain | o.a.catalina.core.StandardService    - Starting service [Tomcat]
+2026-08-06 16:40:31.186[1786014631186] | INFO  | restartedMain | o.a.catalina.core.StandardEngine     - Starting Servlet engine: [Apache Tomcat/10.1.24]
+2026-08-06 16:40:31.328[1786014631328] | INFO  | restartedMain | o.a.c.c.C.[Tomcat].[localhost].[/]   - Initializing Spring embedded WebApplicationContext
+2026-08-06 16:40:31.333[1786014631333] | INFO  | restartedMain | o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 2508 ms
+2026-08-06 16:40:32.336[1786014632336] | INFO  | restartedMain | o.s.b.d.a.OptionalLiveReloadServer   - LiveReload server is running on port 35729
+2026-08-06 16:40:32.366[1786014632366] | INFO  | restartedMain | o.a.coyote.http11.Http11NioProtocol  - Starting ProtocolHandler ["http-nio-8080"]
+2026-08-06 16:40:32.460[1786014632460] | INFO  | restartedMain | o.s.b.w.e.tomcat.TomcatWebServer     - Tomcat started on port 8080 (http) with context path '/'
+2026-08-06 16:40:32.478[1786014632478] | INFO  | restartedMain | c.n.b.BinanceBackendApplication      - Started BinanceBackendApplication in 4.588 seconds (process running for 6.141)
+2026-08-06 16:40:32.686[1786014632686] | INFO  | http-nio-8080-exec-1 | o.a.c.c.C.[Tomcat].[localhost].[/]   - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-08-06 16:40:32.686[1786014632686] | INFO  | http-nio-8080-exec-1 | o.s.web.servlet.DispatcherServlet    - Initializing Servlet 'dispatcherServlet'
+2026-08-06 16:40:32.688[1786014632688] | INFO  | http-nio-8080-exec-1 | o.s.web.servlet.DispatcherServlet    - Completed initialization in 2 ms
+2026-08-06 16:59:52.260[1786015792260] | INFO  | restartedMain | c.n.b.BinanceBackendApplication      - Starting BinanceBackendApplication using Java 21.0.12 with PID 13508 (D:\SDE-Projects\Navrasa\binanceBackend\target\classes started by ANKIT DOI in D:\SDE-Projects\Navrasa\binanceBackend)
+2026-08-06 16:59:52.263[1786015792263] | INFO  | restartedMain | c.n.b.BinanceBackendApplication      - No active profile set, falling back to 1 default profile: "default"
+2026-08-06 16:59:52.358[1786015792358] | INFO  | restartedMain | o.s.b.d.e.DevToolsPropertyDefaultsPostProcessor - Devtools property defaults active! Set 'spring.devtools.add-properties' to 'false' to disable
+2026-08-06 16:59:52.358[1786015792358] | INFO  | restartedMain | o.s.b.d.e.DevToolsPropertyDefaultsPostProcessor - For additional web related logging consider setting the 'logging.level.web' property to 'DEBUG'
+2026-08-06 16:59:54.488[1786015794488] | INFO  | restartedMain | o.s.b.w.e.tomcat.TomcatWebServer     - Tomcat initialized with port 8080 (http)
+2026-08-06 16:59:54.507[1786015794507] | INFO  | restartedMain | o.a.coyote.http11.Http11NioProtocol  - Initializing ProtocolHandler ["http-nio-8080"]
+2026-08-06 16:59:54.515[1786015794515] | INFO  | restartedMain | o.a.catalina.core.StandardService    - Starting service [Tomcat]
+2026-08-06 16:59:54.515[1786015794515] | INFO  | restartedMain | o.a.catalina.core.StandardEngine     - Starting Servlet engine: [Apache Tomcat/10.1.24]
+2026-08-06 16:59:54.664[1786015794664] | INFO  | restartedMain | o.a.c.c.C.[Tomcat].[localhost].[/]   - Initializing Spring embedded WebApplicationContext
+2026-08-06 16:59:54.666[1786015794666] | INFO  | restartedMain | o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 2299 ms
+2026-08-06 16:59:55.424[1786015795424] | INFO  | restartedMain | o.s.b.d.a.OptionalLiveReloadServer   - LiveReload server is running on port 35729
+2026-08-06 16:59:55.453[1786015795453] | INFO  | restartedMain | o.a.coyote.http11.Http11NioProtocol  - Starting ProtocolHandler ["http-nio-8080"]
+2026-08-06 16:59:55.507[1786015795507] | INFO  | restartedMain | o.s.b.w.e.tomcat.TomcatWebServer     - Tomcat started on port 8080 (http) with context path '/'
+2026-08-06 16:59:55.518[1786015795518] | INFO  | restartedMain | c.n.b.BinanceBackendApplication      - Started BinanceBackendApplication in 3.904 seconds (process running for 5.671)
