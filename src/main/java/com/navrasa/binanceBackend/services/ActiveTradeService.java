@@ -3,29 +3,17 @@ package com.navrasa.binanceBackend.services;
 import com.navrasa.binanceBackend.config.LivePriceHandler;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 @Service
 public class ActiveTradeService {
 
-    // ==================== INNER RECORD CLASSES ====================
-    // Spot Trade State
-    public static class TradeRecord {
-        public double buyPrice;
-        public String quantity;
-        public double stopLoss; // Lower limit
-        public double takeProfit; // Upper limit
-
-        public TradeRecord(double buyPrice, String quantity, double stopLoss, double takeProfit) {
-            this.buyPrice = buyPrice;
-            this.quantity = quantity;
-            this.stopLoss = stopLoss;
-            this.takeProfit = takeProfit;
-        }
-    }
-
-    // Futures Trade State (Hedge Mode & Direction-Aware)
+    // Futures Trade Record with Unique Trade ID
     public static class FuturesTradeRecord {
+        public String tradeId;
         public String symbol;
         public String direction; // "LONG" or "SHORT"
         public double entryPrice;
@@ -33,10 +21,11 @@ public class ActiveTradeService {
         public double stopLoss;
         public double takeProfit;
 
-        public FuturesTradeRecord(String symbol, String direction, double entryPrice, String quantity, double stopLoss,
-                double takeProfit) {
-            this.symbol = symbol;
-            this.direction = direction;
+        public FuturesTradeRecord(String tradeId, String symbol, String direction, double entryPrice, String quantity,
+                double stopLoss, double takeProfit) {
+            this.tradeId = tradeId;
+            this.symbol = symbol.toUpperCase();
+            this.direction = direction.toUpperCase();
             this.entryPrice = entryPrice;
             this.quantity = quantity;
             this.stopLoss = stopLoss;
@@ -44,12 +33,9 @@ public class ActiveTradeService {
         }
     }
 
-    // ==================== STATE MAPS & INJECTIONS ====================
-    private final ConcurrentHashMap<String, TradeRecord> activeTrades = new ConcurrentHashMap<>();
-
-    // 🎯 HEDGE MODE FIX: Map key is "SYMBOL_DIRECTION" (e.g., "BTCUSDT_LONG" &
-    // "BTCUSDT_SHORT")
-    private final ConcurrentHashMap<String, FuturesTradeRecord> activeFuturesTrades = new ConcurrentHashMap<>();
+    // 🎯 MULTI-TRADE MAP: Key is "SYMBOL_DIRECTION" -> Value is a List of Active
+    // Trades
+    private final ConcurrentHashMap<String, List<FuturesTradeRecord>> activeFuturesTrades = new ConcurrentHashMap<>();
 
     private final BinanceTradingService binanceService;
     private final BinanceFuturesTradingService binanceFuturesService;
@@ -63,171 +49,151 @@ public class ActiveTradeService {
         this.livePriceHandler = livePriceHandler;
     }
 
-    // ==================== SPOT TRADING LOGIC ====================
-    public void openTrade(String symbol, double buyPrice, String quantity, double stopLoss, double takeProfit) {
-        activeTrades.put(symbol.toUpperCase(), new TradeRecord(buyPrice, quantity, stopLoss, takeProfit));
-        System.out.println(" Tracked Active Spot Trade: " + symbol + " | Buy: $" + buyPrice
-                + " | Stop Loss: $" + stopLoss + " | Take Profit: $" + takeProfit);
-    }
-
-    public void checkPriceAgainstLimits(String symbol, double livePrice) {
-        TradeRecord trade = activeTrades.get(symbol.toUpperCase());
-        if (trade != null) {
-            // Check Lower Limit (Stop Loss)
-            if (livePrice <= trade.stopLoss) {
-                executeAutoSell(symbol, trade.quantity, livePrice, "STOP_LOSS_TRIGGERED");
-            }
-            // Check Upper Limit (Take Profit)
-            else if (livePrice >= trade.takeProfit) {
-                executeAutoSell(symbol, trade.quantity, livePrice, "TAKE_PROFIT_TRIGGERED");
-            }
-        }
-
-        // Feed price ticks into Futures positions as well
-        checkFuturesPriceAgainstLimits(symbol, livePrice);
-    }
-
-    private void executeAutoSell(String symbol, String quantity, double livePrice, String eventType) {
-        System.out.println("  LIMIT HIT! Executing Auto-Sell (Spot) for " + symbol + " at $" + livePrice);
-        try {
-            binanceService.executeOrder(symbol, "SELL", quantity);
-            activeTrades.remove(symbol.toUpperCase());
-
-            // Broadcast alert back to Angular via WebSocket
-            String alertPayload = String.format(
-                    "{\"exchange\":\"SYSTEM\", \"event\":\"%s\", \"symbol\":\"%s\", \"price\":%f}",
-                    eventType, symbol, livePrice);
-            livePriceHandler.broadcast(alertPayload);
-            System.out.println("  Spot Auto-Sell Complete (" + eventType + ").");
-        } catch (Exception e) {
-            System.err.println("  Spot Auto-Sell Failed: " + e.getMessage());
-        }
-    }
-
-    public String manualClose(String symbol) {
-        TradeRecord trade = activeTrades.get(symbol.toUpperCase());
-        if (trade != null) {
-            String response = binanceService.executeOrder(symbol, "SELL", trade.quantity);
-            activeTrades.remove(symbol.toUpperCase());
-            return response;
-        }
-        return binanceService.executeOrder(symbol, "SELL", "0.001");
-    }
-
-    // ==================== FUTURES TRADING LOGIC (HEDGE MODE & CROSSED MARGIN)
-    // ====================
+    // ==================== MULTI-TRADE FUTURES LOGIC ====================
 
     /**
-     * Tracks an active Futures position in Hedge Mode.
-     * Uses composite key "SYMBOL_DIRECTION" so both LONG and SHORT can exist
-     * simultaneously.
+     * Opens a new trade and adds it to the list for that symbol & direction.
      */
-    public void openFuturesTrade(String symbol, String direction, double entryPrice, String quantity, double stopLoss,
+    public String openFuturesTrade(String symbol, String direction, double entryPrice, String quantity, double stopLoss,
             double takeProfit) {
+        String tradeId = UUID.randomUUID().toString().substring(0, 8); // Unique 8-char ID
         String key = buildFuturesKey(symbol, direction);
-        activeFuturesTrades.put(key, new FuturesTradeRecord(symbol.toUpperCase(), direction.toUpperCase(), entryPrice,
-                quantity, stopLoss, takeProfit));
-        System.out.println(" Tracked Active Futures Trade (" + direction.toUpperCase() + "): " + symbol
-                + " | Key: " + key + " | Entry: $" + entryPrice
-                + " | Stop Loss: $" + stopLoss + " | Take Profit: $" + takeProfit);
+
+        FuturesTradeRecord newTrade = new FuturesTradeRecord(tradeId, symbol, direction, entryPrice, quantity, stopLoss,
+                takeProfit);
+
+        // Compute or append to the thread-safe list
+        activeFuturesTrades.computeIfAbsent(key, k -> new CopyOnWriteArrayList<>()).add(newTrade);
+
+        System.out.println(" Tracked New Futures Trade [" + tradeId + "] (" + direction.toUpperCase() + "): " + symbol
+                + " | Entry: $" + entryPrice + " | Qty: " + quantity + " | SL: $" + stopLoss + " | TP: $" + takeProfit);
+
+        return tradeId;
     }
 
     /**
-     * Checks live price against both LONG and SHORT positions independently for a
-     * symbol.
+     * Checks live price against ALL active trades across all directions.
      */
     public void checkFuturesPriceAgainstLimits(String symbol, double livePrice) {
-        // 1. Check active LONG position
-        FuturesTradeRecord longTrade = activeFuturesTrades.get(buildFuturesKey(symbol, "LONG"));
-        if (longTrade != null) {
-            if (livePrice <= longTrade.stopLoss) {
-                executeAutoFuturesClose(longTrade, livePrice, "FUTURES_LONG_STOP_LOSS");
-            } else if (livePrice >= longTrade.takeProfit) {
-                executeAutoFuturesClose(longTrade, livePrice, "FUTURES_LONG_TAKE_PROFIT");
+        // 1. Check all active LONG trades
+        List<FuturesTradeRecord> longTrades = activeFuturesTrades.get(buildFuturesKey(symbol, "LONG"));
+        if (longTrades != null) {
+            for (FuturesTradeRecord trade : longTrades) {
+                if (livePrice <= trade.stopLoss) {
+                    executeAutoFuturesClose(trade, livePrice, "FUTURES_LONG_STOP_LOSS");
+                } else if (livePrice >= trade.takeProfit) {
+                    executeAutoFuturesClose(trade, livePrice, "FUTURES_LONG_TAKE_PROFIT");
+                }
             }
         }
 
-        // 2. Check active SHORT position
-        FuturesTradeRecord shortTrade = activeFuturesTrades.get(buildFuturesKey(symbol, "SHORT"));
-        if (shortTrade != null) {
-            if (livePrice >= shortTrade.stopLoss) { // Short SL triggers when price goes UP
-                executeAutoFuturesClose(shortTrade, livePrice, "FUTURES_SHORT_STOP_LOSS");
-            } else if (livePrice <= shortTrade.takeProfit) { // Short TP triggers when price goes DOWN
-                executeAutoFuturesClose(shortTrade, livePrice, "FUTURES_SHORT_TAKE_PROFIT");
+        // 2. Check all active SHORT trades
+        List<FuturesTradeRecord> shortTrades = activeFuturesTrades.get(buildFuturesKey(symbol, "SHORT"));
+        if (shortTrades != null) {
+            for (FuturesTradeRecord trade : shortTrades) {
+                if (livePrice >= trade.stopLoss) { // Short SL triggers when price goes UP
+                    executeAutoFuturesClose(trade, livePrice, "FUTURES_SHORT_STOP_LOSS");
+                } else if (livePrice <= trade.takeProfit) { // Short TP triggers when price goes DOWN
+                    executeAutoFuturesClose(trade, livePrice, "FUTURES_SHORT_TAKE_PROFIT");
+                }
             }
         }
     }
 
     private void executeAutoFuturesClose(FuturesTradeRecord trade, double livePrice, String eventType) {
-        System.out.println(
-                "  FUTURES LIMIT HIT! Auto-Closing " + trade.direction + " for " + trade.symbol + " at $" + livePrice);
+        System.out.println(" FUTURES LIMIT HIT! Auto-Closing Trade [" + trade.tradeId + "] (" + trade.direction
+                + ") at $" + livePrice);
         try {
-            // In Hedge Mode:
-            // Closing a LONG position requires positionSide="LONG" and side="SELL"
-            // Closing a SHORT position requires positionSide="SHORT" and side="BUY"
             String closingSide = "LONG".equalsIgnoreCase(trade.direction) ? "SELL" : "BUY";
 
+            // Execute order on Binance for EXACT trade quantity
             binanceFuturesService.executeFuturesOrder(trade.symbol, trade.direction, closingSide, 1, trade.quantity);
 
-            String key = buildFuturesKey(trade.symbol, trade.direction);
-            activeFuturesTrades.remove(key);
+            // Remove specific trade from active list
+            removeTradeFromList(trade.symbol, trade.direction, trade.tradeId);
 
             String alertPayload = String.format(
-                    "{\"exchange\":\"SYSTEM\", \"event\":\"%s\", \"symbol\":\"%s\", \"direction\":\"%s\", \"price\":%f}",
-                    eventType, trade.symbol, trade.direction, livePrice);
+                    "{\"exchange\":\"SYSTEM\", \"event\":\"%s\", \"symbol\":\"%s\", \"direction\":\"%s\", \"tradeId\":\"%s\", \"price\":%f}",
+                    eventType, trade.symbol, trade.direction, trade.tradeId, livePrice);
             livePriceHandler.broadcast(alertPayload);
-            System.out.println("  Futures Auto-Close Complete (" + eventType + ").");
+
+            System.out.println(" Futures Auto-Close Complete for Trade ID: " + trade.tradeId);
         } catch (Exception e) {
-            System.err.println("  Futures Auto-Close Failed: " + e.getMessage());
+            System.err.println(" Futures Auto-Close Failed for Trade ID " + trade.tradeId + ": " + e.getMessage());
         }
     }
 
     /**
-     * Manual close with explicit direction (Hedge Mode compatible)
+     * Manually close a specific trade by tradeId
      */
-    public String manualFuturesClose(String symbol, String direction) {
+    public String manualFuturesCloseByTradeId(String symbol, String direction, String tradeId) {
         String key = buildFuturesKey(symbol, direction);
-        FuturesTradeRecord trade = activeFuturesTrades.get(key);
-        if (trade != null) {
-            String closingSide = "LONG".equalsIgnoreCase(trade.direction) ? "SELL" : "BUY";
-            String response = binanceFuturesService.executeFuturesOrder(trade.symbol, trade.direction, closingSide, 1,
-                    trade.quantity);
-            activeFuturesTrades.remove(key);
-            return response;
+        List<FuturesTradeRecord> trades = activeFuturesTrades.get(key);
+
+        if (trades != null) {
+            for (FuturesTradeRecord trade : trades) {
+                if (trade.tradeId.equalsIgnoreCase(tradeId)) {
+                    String closingSide = "LONG".equalsIgnoreCase(trade.direction) ? "SELL" : "BUY";
+                    String response = binanceFuturesService.executeFuturesOrder(trade.symbol, trade.direction,
+                            closingSide, 1, trade.quantity);
+
+                    removeTradeFromList(symbol, direction, tradeId);
+                    return response;
+                }
+            }
         }
-        return "{\"error\":\"No active " + direction + " futures position found for symbol " + symbol + "\"}";
+        return "{\"error\":\"Trade ID " + tradeId + " not found for symbol " + symbol + "\"}";
     }
 
     /**
-     * Fallback manual close when direction is not specified.
-     * Formats output as valid JSON to prevent Angular parsing errors.
+     * Manually close all trades for a direction
      */
-    public String manualFuturesClose(String symbol) {
-        String longKey = buildFuturesKey(symbol, "LONG");
-        String shortKey = buildFuturesKey(symbol, "SHORT");
+    public String manualFuturesCloseAll(String symbol, String direction) {
+        String key = buildFuturesKey(symbol, direction);
+        List<FuturesTradeRecord> trades = activeFuturesTrades.get(key);
 
-        boolean found = false;
-        StringBuilder jsonBuilder = new StringBuilder("{");
+        if (trades != null && !trades.isEmpty()) {
+            StringBuilder responses = new StringBuilder("[");
+            for (int i = 0; i < trades.size(); i++) {
+                FuturesTradeRecord trade = trades.get(i);
+                String closingSide = "LONG".equalsIgnoreCase(trade.direction) ? "SELL" : "BUY";
+                String res = binanceFuturesService.executeFuturesOrder(trade.symbol, trade.direction, closingSide, 1,
+                        trade.quantity);
+                responses.append(res);
+                if (i < trades.size() - 1)
+                    responses.append(",");
+            }
+            responses.append("]");
+            activeFuturesTrades.remove(key);
+            return responses.toString();
+        }
+        return "{\"error\":\"No active " + direction + " futures trades found for " + symbol + "\"}";
+    }
 
-        if (activeFuturesTrades.containsKey(longKey)) {
-            jsonBuilder.append("\"longClose\":").append(manualFuturesClose(symbol, "LONG"));
-            found = true;
+    private void removeTradeFromList(String symbol, String direction, String tradeId) {
+        String key = buildFuturesKey(symbol, direction);
+        List<FuturesTradeRecord> trades = activeFuturesTrades.get(key);
+        if (trades != null) {
+            trades.removeIf(t -> t.tradeId.equalsIgnoreCase(tradeId));
+            if (trades.isEmpty()) {
+                activeFuturesTrades.remove(key);
+            }
         }
-        if (activeFuturesTrades.containsKey(shortKey)) {
-            if (found)
-                jsonBuilder.append(",");
-            jsonBuilder.append("\"shortClose\":").append(manualFuturesClose(symbol, "SHORT"));
-            found = true;
-        }
-
-        if (!found) {
-            return "{\"error\":\"No active futures positions found for symbol " + symbol + "\"}";
-        }
-        jsonBuilder.append("}");
-        return jsonBuilder.toString();
     }
 
     private String buildFuturesKey(String symbol, String direction) {
         return symbol.toUpperCase() + "_" + direction.toUpperCase();
+    }
+
+    
+    /**
+     * Calculates the total combined active futures trades.
+     */
+    public int getTotalActiveTradesCount() {
+        int count = 0;
+        for (List<FuturesTradeRecord> trades : activeFuturesTrades.values()) {
+            count += trades.size();
+        }
+        return count;
     }
 }

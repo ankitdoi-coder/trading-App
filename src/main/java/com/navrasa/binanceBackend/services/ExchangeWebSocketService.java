@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.navrasa.binanceBackend.config.LivePriceHandler;
 import jakarta.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
+
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
 import org.springframework.stereotype.Service;
@@ -17,6 +19,7 @@ public class ExchangeWebSocketService {
 
     private final LivePriceHandler livePriceHandler;
     private final ActiveTradeService activeTradeService;
+
     private final ObjectMapper mapper = new ObjectMapper();
     private final RestTemplate restTemplate = new RestTemplate();
 
@@ -54,7 +57,7 @@ public class ExchangeWebSocketService {
                             // 2. Feed price to Auto-Seller Engine
                             JsonNode data = mapper.readTree(message);
                             double currentPrice = data.path("c").asDouble();
-                            activeTradeService.checkPriceAgainstLimits("BTCUSDT", currentPrice);
+                            activeTradeService.checkFuturesPriceAgainstLimits("BTCUSDT", currentPrice);
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
